@@ -164,7 +164,6 @@ function createShipIcon(shipData, isSelected, mapZoom = 5) {
     ? `<rect x="-12" y="-12" width="24" height="24" fill="none" stroke="black" stroke-width="2" stroke-dasharray="5,3" />`
     : '';
 
-  // ** Force all ships to use realistic shape when zoomed in **
   let shipShape;
   if (mapZoom >= 14 && dimA !== null && dimB !== null) {
     shipShape = `
@@ -184,7 +183,6 @@ function createShipIcon(shipData, isSelected, mapZoom = 5) {
       <line x1="0" y1="-12" x2="0" y2="-14" stroke="black" stroke-width="1" />
     `;
   } else {
-    // ** Ensure zoomed-out version keeps the correct color **
     shipShape = `
       <polygon points="0,-8 6,8 -6,8"
                fill="${color}" stroke="black" stroke-width="1.5" />

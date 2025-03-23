@@ -253,7 +253,7 @@ function updateShips(shipsArray) {
           offset: [0, -5],
         });
       }
-   } 
+    }
     // else {
     //   // Przy zoomie >= 14 i gdy znana jest długość – rysujemy poligon
     //   if (shipMarkers[mmsi]) {
@@ -434,18 +434,49 @@ function updateCollisionsList() {
   // Auto-zoom to the latest new collision
   if (newCollision) {
     setTimeout(() => zoomToCollision(newCollision), 1000);
-  }   
+  }
 }
+
+function getDynamicRadius(zoom) {
+  const baseRadius = 1500;
+  const scaleFactor = Math.pow(2, zoom - 5); 
+  let calculatedRadius = baseRadius * scaleFactor;
+  return Math.min(calculatedRadius, baseRadius);
+}
+
+let collisionHighlightLayer = null;
 
 function zoomToCollision(c) {
   const latC = (c.latitude_a + c.latitude_b) / 2;
   const lonC = (c.longitude_a + c.longitude_b) / 2;
+
+  if (collisionHighlightLayer) {
+    map.removeLayer(collisionHighlightLayer);
+  }
+
+  // Initial radius based on zoom level
+  let initialRadius = getDynamicRadius(map.getZoom());
+
+  // Create highlight circle
+  collisionHighlightLayer = L.circle([latC, lonC], {
+    radius: initialRadius, // Dynamic radius
+    color: "red", // Border color
+    weight: 4, // Border thickness
+    fillOpacity: 0, // No fill, just border
+  }).addTo(map);
 
   map.flyTo([latC, lonC], 10, {
     animate: true,
     duration: 1.5,
   });
 
+  // Update radius dynamically on zoom change
+  map.on("zoomend", () => {
+    if (collisionHighlightLayer) {
+      let newRadius = getDynamicRadius(map.getZoom());
+      collisionHighlightLayer.setRadius(newRadius);
+    }
+  });
   // const key = `${c.mmsi_a}_${c.mmsi_b}`;
 }
 

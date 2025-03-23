@@ -9,6 +9,7 @@ load_dotenv()
 from apache_beam import window
 import math
 from datetime import datetime
+import secrets
 
 credentials_path = './client-subscription-credentials.json'
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = credentials_path
@@ -213,20 +214,20 @@ def run_pipeline():
     region = os.getenv("REGION", "us-east1")
     temp_loc = os.getenv("TEMP_LOCATION", "gs://ais-collision-detection-bucket/temp")
     staging_loc = os.getenv("STAGING_LOCATION", "gs://ais-collision-detection-bucket/staging")
-    job_name = os.getenv("JOB_NAME", "ais-collision-detection-job")
+    job_name = f"ais-collision-detection-job-{secrets.token_hex(3)}"
     table_positions = f"{project_id}.{dataset}.ships_positions"
     table_collisions = f"{project_id}.{dataset}.ships_collisions"
     table_static = f"{project_id}.{dataset}.ships_static"
     
     pipeline_options = PipelineOptions(
         runner="DirectRunner",
-        # project=project_id,
-        # region=region,
-        # temp_location=temp_loc,
-        # staging_location=staging_loc,
-        # job_name=os.getenv("JOB_NAME", "ais-collision-detection-job"),
-        # autoscaling_algorithm='THROUGHPUT_BASED',
-        # save_main_session=True,
+        project=project_id,
+        region=region,
+        temp_location=temp_loc,
+        staging_location=staging_loc,
+        job_name=job_name,
+        autoscaling_algorithm='THROUGHPUT_BASED',
+        save_main_session=True,
         streaming=True,
     )
     # pipeline_options.view_as(SetupOptions).setup_file = "./setup.py"
