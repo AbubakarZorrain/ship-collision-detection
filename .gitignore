@@ -1,0 +1,17 @@
+# python env
+venv
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pyw
+*.pyz
+
+.env
+*.env
+*.env.*
+*.env.local
+
+# google credentials
+client-subscription-credentials.json

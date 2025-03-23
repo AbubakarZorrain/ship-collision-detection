@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AIS Collision Detection – History</title>
+
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+    crossorigin=""
+  />
+  <!-- MarkerCluster CSS (opcjonalnie) -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+  />
+
+  <!-- Twoje style (styles.css) -->
+  <link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='styles.css') }}"
+  />
+
+  <!-- Leaflet JS -->
+  <script
+    src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
+    crossorigin=""
+  ></script>
+  <!-- MarkerCluster JS (opcjonalnie) -->
+  <script
+    src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"
+  ></script>
+</head>
+<body>
+
+  <!-- Górny panel (zmiana dni) -->
+  <div id="top-center-bar">
+    <h2>Historical Mode</h2>
+    <div id="day-controls">
+      <button id="prevDay">Day -</button>
+      <span id="currentDayLabel">Date: ???</span>
+      <button id="nextDay">Day +</button>
+    </div>
+  </div>
+
+  <!-- Lewy panel: wyświetlany przy odtwarzaniu scenariusza -->
+  <div id="left-panel" style="display:none;">
+    <div id="selected-ships-info"></div>
+    <div id="pair-info"></div>
+  </div>
+
+  <!-- Mapa -->
+  <div id="map"></div>
+
+  <!-- Prawy panel: lista kolizji/scenariuszy -->
+  <div id="right-panel">
+    <h2>Historical Collisions</h2>
+    <div id="collision-list" style="overflow:auto; max-height:90vh;">
+      <!-- wypełniane przez JS -->
+    </div>
+  </div>
+
+  <!-- Dolny panel (sterowanie animacją) -->
+  <div id="bottom-center-bar" style="display:none;">
+    <button id="stepBack">&lt;</button>
+    <button id="playPause">Play</button>
+    <button id="stepForward">&gt;</button>
+    <span id="frameIndicator"></span>
+    <!-- Przycisk "Close" -->
+    <button id="closePlayback">Close</button>
+  </div>
+
+  <!-- common.js, history_app.js -->
+  <script src="{{ url_for('static', filename='common.js') }}"></script>
+  <script src="{{ url_for('static', filename='history_app.js') }}"></script>
+</body>
+</html>

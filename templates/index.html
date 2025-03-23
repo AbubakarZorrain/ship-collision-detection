@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AIS Collision Detection – Live</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" crossorigin=""/>
+  <!-- MarkerCluster CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+  <!-- Własne style -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" crossorigin=""></script>
+  <!-- MarkerCluster JS -->
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+</head>
+<body>
+  <!-- Mała ikona spinnera – dla statków (lewy dolny róg) -->
+  <div id="ships-spinner" class="spinner-icon" style="display: none; position: fixed; left: 10px; bottom: 10px;">
+    &#8635;
+  </div>
+  <!-- Mała ikona spinnera – dla kolizji (lewy dolny róg, nieco powyżej) -->
+  <div id="collisions-spinner" class="spinner-icon" style="display: none; position: fixed; left: 10px; bottom: 60px;">
+    &#8635;
+  </div>
+
+  <!-- Lewy panel podzielony na cztery sekcje -->
+  <div id="left-panel">
+    <!-- Sekcja 1: Nagłówek z napisem "Selected Ships" i przyciskiem Clear -->
+    <div id="left-panel-header">
+      <h2>Selected Ships</h2>
+      <button id="clearSelectedShips">Clear</button>
+    </div>
+    <!-- Sekcja 2: Dane pierwszego statku -->
+    <div id="selected-ship-1">
+      <!-- Dane pierwszego statku będą dynamicznie wstawiane tutaj -->
+    </div>
+    <!-- Sekcja 3: Dane drugiego statku -->
+    <div id="selected-ship-2">
+      <!-- Dane drugiego statku będą dynamicznie wstawiane tutaj -->
+    </div>
+    <!-- Sekcja 4: Suwak i obliczone dane -->
+    <div id="calculated-section">
+      <div id="vector-length-container">
+        <label for="vectorLengthSlider">Vector length (min):</label>
+        <input type="range" id="vectorLengthSlider" min="1" max="120" value="15">
+        <span id="vectorLengthValue">15</span>
+      </div>
+      <div id="calculated-info">
+        <!-- Obliczone informacje (CPA/TCPA, dystans) pojawią się tutaj -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Kontener mapy -->
+  <div id="map"></div>
+
+  <!-- Prawy panel (lista kolizji) -->
+  <div id="right-panel">
+    <h2>Collisions</h2>
+    <div id="collision-filters">
+      <label for="cpaFilter">Max CPA (Nm):</label>
+      <input type="range" id="cpaFilter" min="0" max="0.5" step="0.1" value="0.5">
+      <span id="cpaValue">0.5</span>
+      <br/>
+      <label for="tcpaFilter">Max TCPA (min):</label>
+      <input type="range" id="tcpaFilter" min="1" max="10" step="1" value="10">
+      <span id="tcpaValue">10</span>
+    </div>
+    <div id="collision-list"></div>
+  </div>
+
+  <!-- Górny pasek tytułowy -->
+  <div id="top-center-bar">
+    AIS Collision Detection – Live Map
+  </div>
+
+  <!-- Modal z informacjami (opcjonalnie) -->
+  <div id="infoModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <span id="modalClose" class="modal-close">&times;</span>
+      <p>This is an example Info modal. Add your project details here.</p>
+    </div>
+  </div>
+
+  <!-- Ładowanie wspólnych skryptów -->
+  <script src="{{ url_for('static', filename='common.js') }}"></script>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

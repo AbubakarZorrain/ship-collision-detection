@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>AIS Collision Tracker</title>
+    <script>
+        function startPipeline() {
+            fetch('/run-pipeline')
+                .then(response => response.json())
+                .then(data => alert(data.message || data.error));
+        }
+    </script>
+</head>
+<body>
+    <h1>AIS Collision Tracking</h1>
+    <button onclick="startPipeline()">Run Data Pipeline</button>
+</body>
+</html>

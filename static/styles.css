@@ -1,0 +1,198 @@
+/* Definicje zmiennych – paleta kolorów, czcionka, przejścia */
+:root {
+  --primary-color: #007bff;
+  --secondary-color: #6c757d;
+  --background-color: #f8f9fa;
+  --panel-bg: rgba(255, 255, 255, 0.95);
+  --border-color: #ddd;
+  --shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  --transition-speed: 0.3s;
+  --font-family: 'Roboto', sans-serif;
+}
+
+/* Reset marginesów, wypełnień i podstawowe style */
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  font-family: var(--font-family);
+  font-size: 14px;
+  background-color: var(--background-color);
+}
+
+/* Kontener mapy – zajmuje całe okno */
+#map {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+}
+
+/* Lewy panel – podzielony na cztery sekcje */
+#left-panel {
+  position: fixed;
+  top: 80px;
+  left: 20px;
+  width: 300px;
+  max-height: 80%;
+  background-color: var(--panel-bg);
+  padding: 15px;
+  overflow-y: auto;
+  z-index: 1000;
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  transition: all var(--transition-speed);
+}
+
+/* Sekcja nagłówka w lewym panelu – tytuł oraz przycisk Clear po tej samej linii */
+#left-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+/* Pozostałe sekcje lewego panelu */
+#selected-ship-1,
+#selected-ship-2,
+#calculated-info {
+  margin-bottom: 15px;
+}
+
+/* Prawy panel – lista kolizji */
+#right-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 300px;
+  height: 100%;
+  background-color: #fff;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: -4px 0 8px rgba(0, 0, 0, 0.1);
+  padding: 15px;
+  transition: all var(--transition-speed);
+}
+
+/* Górny pasek tytułowy */
+#top-center-bar {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+  color: #fff;
+  padding: 10px 20px;
+  z-index: 1100;
+  border-radius: 5px;
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+/* Dolny pasek (opcjonalny) */
+#bottom-center-bar {
+  position: fixed;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--panel-bg);
+  padding: 10px 20px;
+  z-index: 1100;
+  border-radius: 5px;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+
+/* Lista kolizji – każdy element */
+.collision-item {
+  border-bottom: 1px solid var(--border-color);
+  padding: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  background: #fff;
+  transition: background var(--transition-speed);
+}
+.collision-item:hover {
+  background: #f1f1f1;
+}
+
+/* Nagłówek w elemencie kolizji */
+.collision-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Przycisk lupki (zoom-button) */
+.zoom-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  margin-left: 8px;
+  color: var(--primary-color);
+  transition: color var(--transition-speed);
+}
+.zoom-button:hover {
+  color: var(--secondary-color);
+}
+
+/* Sekcje w panelach */
+#vector-length-container,
+#selected-ships-info,
+#pair-info,
+#collision-filters {
+  margin-bottom: 15px;
+}
+
+/* Styl przycisków w day-controls */
+#day-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+#day-controls button {
+  cursor: pointer;
+  padding: 6px 12px;
+  border: none;
+  background-color: var(--primary-color);
+  color: #fff;
+  border-radius: 4px;
+  transition: background var(--transition-speed);
+}
+#day-controls button:hover {
+  background-color: var(--secondary-color);
+}
+
+/* Spinner – mała ikona w lewym dolnym rogu */
+.spinner-icon {
+  position: fixed;
+  bottom: 10px;
+  left: 10px;
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--primary-color);
+  border-top: 3px solid transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  z-index: 2000;
+}
+
+/* Animacja spinnera */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.ship-icon {
+  background: none !important; /* Remove default Leaflet background */
+  border: none;
+}
+
+svg { 
+  overflow: visible !important; 
+}
