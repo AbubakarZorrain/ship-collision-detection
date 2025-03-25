@@ -17,21 +17,86 @@ SHIPS_STATIC_TOPIC=os.getenv('SHIPS_STATIC_TOPIC')
 AIS_DATA_TOPIC=os.getenv('AIS_DATA_TOPIC')
 
 publisher = pubsub_v1.PublisherClient()
-
 client = bigquery.Client()
 
 ship_static_data = {}
 
+BUFFER_SIZE = 50
+FLUSH_INTERVAL = 10
+
+bufferShipsPositions = []
+bufferShipsStatics = []
+buffer_lock = asyncio.Lock()
+
+
+
 def to_float(val):
     return float(val) if isinstance(val, (int, float)) else None
 
+async def bulk_insert_positions():
+    global bufferShipsPositions
+    async with buffer_lock:
+        if not bufferShipsPositions:
+            return
+        
+        rows_to_insert = bufferShipsPositions.copy()
+        bufferShipsPositions = []
+
+    table_id = 'ais-collision-detection.ais_dataset_us.ships_positions'
+
+    try:
+        client.get_table(table_id)
+    except NotFound:
+        create_bigquery_tables()
+        
+    try:
+        errors = client.insert_rows_json(table_id, rows_to_insert)
+        if errors:
+            print(f"BigQuery Insert Errors: {errors}")
+        else:
+            print(f"Successfully inserted {len(rows_to_insert)} rows into BigQuery.")
+    except Exception as e:
+        print(f"Bulk insert failed: {e}")
+
+async def bulk_insert_statics():
+    global bufferShipsStatics
+    async with buffer_lock:
+        if not bufferShipsStatics:
+            return
+        
+        rows_to_insert = bufferShipsStatics.copy()
+        bufferShipsStatics = []
+
+    table_id = 'ais-collision-detection.ais_dataset_us.ships_static'
+
+    try:
+        client.get_table(table_id)
+    except NotFound:
+        create_bigquery_tables()
+        
+    try:
+        errors = client.insert_rows_json(table_id, rows_to_insert)
+        if errors:
+            print(f"BigQuery Insert Errors: {errors}")
+        else:
+            print(f"Successfully inserted {len(rows_to_insert)} rows into BigQuery.")
+    except Exception as e:
+        print(f"Bulk insert failed: {e}")
+
+async def periodic_flush():
+    """Periodically flush the buffer"""
+    while True:
+        await asyncio.sleep(FLUSH_INTERVAL)
+        await bulk_insert_positions()
+        await bulk_insert_statics()
+                    
 def write_to_bigquery(table_id, rows):
     if not rows:
         print("No data to insert.")
         return
     
     try:
-        errors = client.insert_rows_json(table_id, rows)  # Insert rows into BigQuery
+        errors = client.insert_rows_json(table_id, rows)
         if errors:
             print(f"Encountered errors while inserting rows: {errors}")
         else:
@@ -111,7 +176,7 @@ async def handle_ship_position_data(message):
     if ais_message['Sog'] >= 2:       
         statics = ship_static_data.get(mmsi, {})
         if not statics:
-            print(f"Static data not found for MMSI: {mmsi}")
+            # print(f"Static data not found for MMSI: {mmsi}")
             return
         reduced_message = {
             "mmsi": mmsi,
@@ -129,8 +194,8 @@ async def handle_ship_position_data(message):
         }
         payload_bytes = json.dumps(reduced_message).encode("utf-8")                
         future = publisher.publish(AIS_DATA_TOPIC, payload_bytes)
-        print(f"Published reduced message ID: {future.result()}")
-        
+        # print(f"Published reduced message ID: {future.result()}")
+            
         # Write to BigQuery
         write_message = {
             "mmsi": int(mmsi),
@@ -143,13 +208,20 @@ async def handle_ship_position_data(message):
             "timestamp": formatted_timestamp.strftime("%Y-%m-%d %H:%M:%S")
         }
         
-        # Check if the table exists
-        try:
-            client.get_table('ais-collision-detection.ais_dataset_us.ships_positions')
-        except NotFound:
-            create_bigquery_tables()
+        async with buffer_lock:
+            bufferShipsPositions.append(write_message)
+
+        # Trigger bulk insert when buffer is full
+        if len(bufferShipsPositions) >= BUFFER_SIZE:
+            await bulk_insert_positions()
             
-        await asyncio.to_thread(write_to_bigquery, 'ais-collision-detection.ais_dataset_us.ships_positions', [write_message]) 
+        # # Check if the table exists
+        # try:
+        #     client.get_table('ais-collision-detection.ais_dataset_us.ships_positions')
+        # except NotFound:
+        #     create_bigquery_tables()
+            
+        # await asyncio.to_thread(write_to_bigquery, 'ais-collision-detection.ais_dataset_us.ships_positions', [write_message]) 
 
 async def handle_ship_static_data(message):
     metadata = message.get("MetaData", {})
@@ -179,13 +251,20 @@ async def handle_ship_static_data(message):
             "update_time": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
         }
         
+        async with buffer_lock:
+            bufferShipsStatics.append(write_message)
+
+        # Trigger bulk insert when buffer is full
+        if len(bufferShipsStatics) >= BUFFER_SIZE:
+            await bulk_insert_positions()
+        
         # Check if the table exists
-        try:
-            client.get_table('ais-collision-detection.ais_dataset_us.ships_static')
-        except NotFound:
-            create_bigquery_tables()
+        # try:
+        #     client.get_table('ais-collision-detection.ais_dataset_us.ships_static')
+        # except NotFound:
+        #     create_bigquery_tables()
             
-        await asyncio.to_thread(write_to_bigquery, 'ais-collision-detection.ais_dataset_us.ships_static', [write_message])        
+        # await asyncio.to_thread(write_to_bigquery, 'ais-collision-detection.ais_dataset_us.ships_static', [write_message])        
     
 async def connect_ais_stream():
     while True:
@@ -208,7 +287,7 @@ async def connect_ais_stream():
                     message = json.loads(message_json)
                     message_type = message["MessageType"]
 
-                    print(f"[{datetime.now(timezone.utc)}] Received message of type: {message_type}")
+                    # print(f"[{datetime.now(timezone.utc)}] Received message of type: {message_type}")
                     if message_type == "PositionReport":
                         await handle_ship_position_data(message)
                             

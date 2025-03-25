@@ -459,10 +459,10 @@ function zoomToCollision(c) {
 
   // Create highlight circle
   collisionHighlightLayer = L.circle([latC, lonC], {
-    radius: initialRadius, // Dynamic radius
-    color: "red", // Border color
-    weight: 4, // Border thickness
-    fillOpacity: 0, // No fill, just border
+    radius: initialRadius,
+    color: "red",
+    weight: 4,
+    fillOpacity: 0,
   }).addTo(map);
 
   map.flyTo([latC, lonC], 10, {
@@ -477,7 +477,6 @@ function zoomToCollision(c) {
       collisionHighlightLayer.setRadius(newRadius);
     }
   });
-  // const key = `${c.mmsi_a}_${c.mmsi_b}`;
 }
 
 function updateVectorSlider(tcpa) {
