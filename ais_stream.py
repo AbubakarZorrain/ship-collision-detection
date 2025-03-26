@@ -9,6 +9,7 @@ from google.cloud import bigquery
 load_dotenv()
 from google.api_core.exceptions import NotFound
 from create_bq_tables import create_bigquery_tables
+import time
 
 credentials_path = './client-subscription-credentials.json'
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = credentials_path
@@ -28,6 +29,30 @@ bufferShipsPositions = []
 bufferShipsStatics = []
 buffer_lock = asyncio.Lock()
 
+# Buffer settings
+MESSAGE_BATCH_SIZE = 10
+BATCH_TIME_LIMIT = 5
+message_buffer = []
+last_publish_time = time.time()
+
+async def publish_batch():
+    global message_buffer, last_publish_time
+    if not message_buffer:
+        return
+    
+    print(f"Publishing {len(message_buffer)} messages...")
+    
+    # Publish all messages at once
+    futures = []
+    for message in message_buffer:
+        futures.append(publisher.publish(AIS_DATA_TOPIC, message))
+    
+    # Wait for all messages to be published
+    await asyncio.gather(*[asyncio.to_thread(future.result) for future in futures])
+
+    # Clear buffer
+    message_buffer = []
+    last_publish_time = time.time()
 
 
 def to_float(val):
@@ -192,8 +217,13 @@ async def handle_ship_position_data(message):
             "dim_c": statics.get("dim_c"),
             "dim_d": statics.get("dim_d")
         }
-        payload_bytes = json.dumps(reduced_message).encode("utf-8")                
-        future = publisher.publish(AIS_DATA_TOPIC, payload_bytes)
+        payload_bytes = json.dumps(reduced_message).encode("utf-8") 
+        message_buffer.append(payload_bytes)
+
+        # Check if we should publish
+        if len(message_buffer) >= MESSAGE_BATCH_SIZE or (time.time() - last_publish_time) >= BATCH_TIME_LIMIT:
+            await publish_batch()               
+        # future = publisher.publish(AIS_DATA_TOPIC, payload_bytes)
         # print(f"Published reduced message ID: {future.result()}")
             
         # Write to BigQuery

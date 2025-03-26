@@ -25,9 +25,6 @@ from flask import Flask, jsonify, render_template, request
 from google.cloud import bigquery
 from google.cloud import storage
 
-import asyncio
-from ais_stream import main 
-from ais_pipeline import pipeline
 ##################################################
 # Inicjalizacja Flask i BigQuery
 ##################################################

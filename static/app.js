@@ -317,10 +317,12 @@ function updateCollisionsList() {
   collisionMarkers = [];
 
   if (!collisionsData || collisionsData.length === 0) {
+    console.log("No collisions currently.");
     const noItem = document.createElement("div");
     noItem.classList.add("collision-item");
     noItem.innerHTML = "<i>No collisions currently.</i>";
     collisionList.appendChild(noItem);
+    removeCollisionHighlight();
     return;
   }
 
@@ -445,10 +447,13 @@ function getDynamicRadius(zoom) {
 }
 
 let collisionHighlightLayer = null;
-
+let zoomListener = null;
 function zoomToCollision(c) {
   const latC = (c.latitude_a + c.latitude_b) / 2;
   const lonC = (c.longitude_a + c.longitude_b) / 2;
+
+  // // Remove the existing highlight if it exists
+  // removeCollisionHighlight();
 
   if (collisionHighlightLayer) {
     map.removeLayer(collisionHighlightLayer);
@@ -477,6 +482,30 @@ function zoomToCollision(c) {
       collisionHighlightLayer.setRadius(newRadius);
     }
   });
+
+  // // Function to update radius dynamically
+  // const updateRadius = () => {
+  //   if (collisionHighlightLayer) {
+  //     let newRadius = getDynamicRadius(map.getZoom());
+  //     collisionHighlightLayer.setRadius(newRadius);
+  //   }
+  // };
+
+  // // Store and attach zoom event listener
+  // zoomListener = updateRadius;
+  // map.on("zoomend", zoomListener);
+}
+
+function removeCollisionHighlight() {
+  if (collisionHighlightLayer) {
+    map.removeLayer(collisionHighlightLayer);
+    collisionHighlightLayer = null;
+  }
+
+  // if (zoomListener) {
+  //   map.off("zoomend", zoomListener);
+  //   zoomListener = null;
+  // }
 }
 
 function updateVectorSlider(tcpa) {
