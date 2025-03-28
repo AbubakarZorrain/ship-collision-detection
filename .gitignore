@@ -15,3 +15,6 @@ __pycache__/
 
 # google credentials
 client-subscription-credentials.json
+
+
+ais_pipeline.egg-info

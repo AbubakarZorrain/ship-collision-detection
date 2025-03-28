@@ -1,5 +1,5 @@
 import apache_beam as beam
-from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
+from apache_beam.options.pipeline_options import PipelineOptions
 import json
 import geohash
 from math import radians, cos, sin, sqrt, atan2
@@ -46,9 +46,47 @@ class FormatForBigQuery(beam.DoFn):
         }
         yield formatted_row
         
+BASE32 = "0123456789bcdefghjkmnpqrstuvwxyz"
+
+def encode_geohash(lat, lon, precision=3):
+    lat_interval = (-90.0, 90.0)
+    lon_interval = (-180.0, 180.0)
+    geohash_str = []
+    bit = 0
+    ch = 0
+    is_lon = True
+
+    for _ in range(precision * 5):
+        if is_lon:
+            mid = (lon_interval[0] + lon_interval[1]) / 2
+            if lon > mid:
+                ch = (ch << 1) | 1
+                lon_interval = (mid, lon_interval[1])
+            else:
+                ch = (ch << 1)
+                lon_interval = (lon_interval[0], mid)
+        else:
+            mid = (lat_interval[0] + lat_interval[1]) / 2
+            if lat > mid:
+                ch = (ch << 1) | 1
+                lat_interval = (mid, lat_interval[1])
+            else:
+                ch = (ch << 1)
+                lat_interval = (lat_interval[0], mid)
+
+        is_lon = not is_lon
+        bit += 1
+
+        if bit == 5:
+            geohash_str.append(BASE32[ch])
+            bit = 0
+            ch = 0
+
+    return "".join(geohash_str) 
+
 def assign_geohash(ship):
     print("Assigning geohash")
-    precision = 3
+    precision = 5
     ship["geohash"] = geohash.encode(ship["latitude"], ship["longitude"], precision)
     print(f"Assigned geohash: {ship['geohash']}")
     return ship
@@ -158,7 +196,7 @@ def calculate_cpa_tcpa(ship_pair):
     if v2 != 0:
         tcpa_hours = - (dx * dvx + dy * dvy) / v2
         if tcpa_hours < 0:
-            tcpa_hours = 0  # No future collision risk
+            tcpa_hours = 0
 
     # Convert TCPA to minutes
     tcpa_minutes = tcpa_hours * 60
@@ -196,7 +234,6 @@ def is_ship_long_enough(ship):
 
     # Ensure both values are not None before performing addition
     if dim_a is None or dim_b is None:
-        # print(f"Skipping ship {ship.get('mmsi')} due to missing dimensions: dim_a={dim_a}, dim_b={dim_b}")
         print("ship is not long enough")
         return False
 
@@ -210,27 +247,23 @@ def is_ship_long_enough(ship):
 # Beam Pipeline
 def run_pipeline():
     project_id = os.getenv("GOOGLE_CLOUD_PROJECT", "ais-collision-detection")
-    dataset = os.getenv("LIVE_DATASET", "ais_dataset_us")
     region = os.getenv("REGION", "us-east1")
     temp_loc = os.getenv("TEMP_LOCATION", "gs://ais-collision-detection-bucket/temp")
     staging_loc = os.getenv("STAGING_LOCATION", "gs://ais-collision-detection-bucket/staging")
     job_name = f"ais-collision-detection-job-{secrets.token_hex(3)}"
-    table_positions = f"{project_id}.{dataset}.ships_positions"
-    table_collisions = f"{project_id}.{dataset}.ships_collisions"
-    table_static = f"{project_id}.{dataset}.ships_static"
     
     pipeline_options = PipelineOptions(
-        runner="DirectRunner",
+        runner="DataflowRunner",
         project=project_id,
         region=region,
         temp_location=temp_loc,
         staging_location=staging_loc,
         job_name=job_name,
+        max_num_workers=10,
         autoscaling_algorithm='THROUGHPUT_BASED',
         save_main_session=True,
         streaming=True,
     )
-    # pipeline_options.view_as(SetupOptions).setup_file = "./setup.py"
  
     with beam.Pipeline(options=pipeline_options) as p:
         (
@@ -240,10 +273,9 @@ def run_pipeline():
             | "Filter Short Ships" >> beam.Filter(is_ship_long_enough)
             | "Assign Geohash" >> beam.Map(assign_geohash)
             | "Filter Valid Geohash" >> beam.Filter(lambda r: r and "geohash" in r)
-            # | "KeyByGeohash" >> beam.Map(lambda r: (r["geohash"], r))
-            | "KeyByGeohash" >> beam.Map(lambda r: (r["geohash"][:3], r))  # Broader grouping
-            # | "WindowForCollisions" >> beam.WindowInto(window.FixedWindows(10), allowed_lateness=Duration(0))
-            | "WindowForCollisions" >> beam.WindowInto(window.FixedWindows(size=30))  # Longer time window
+            | "KeyByGeohash" >> beam.Map(lambda r: (r["geohash"], r))
+            # | "KeyByGeohash" >> beam.Map(lambda r: (r["geohash"][:3], r))  # Broader grouping
+            | "WindowForCollisions" >> beam.WindowInto(window.FixedWindows(size=30))
             # | "WindowForCollisions" >> beam.WindowInto(window.SlidingWindows(size=30, period=10))
             | "GroupByGeohash" >> beam.GroupByKey()
             | "Find Nearby Ships" >> beam.FlatMap(find_nearby_ships)
